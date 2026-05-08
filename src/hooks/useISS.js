@@ -22,6 +22,7 @@ export default function useISS() {
   const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const intervalRef = useRef(null);
 
   const fetchLocation = useCallback(async (lat, lon) => {
@@ -49,13 +50,11 @@ export default function useISS() {
 
   const fetchPeople = useCallback(async () => {
     try {
-      // Use https for open-notify (some browsers might still block but it's better)
       const { data } = await axios.get('https://corsproxy.io/?' + encodeURIComponent('http://api.open-notify.org/astros.json'));
       if (data.message === 'success') {
         setPeople(data.people);
       }
     } catch {
-      // fallback to static list if both fail
       if (people.length === 0) {
          setPeople([{ name: 'Oleg Kononenko', craft: 'ISS' }, { name: 'Nikolai Chub', craft: 'ISS' }, { name: 'Tracy Caldwell Dyson', craft: 'ISS' }]);
       }
@@ -65,7 +64,6 @@ export default function useISS() {
   const fetchPosition = useCallback(async () => {
     try {
       setError(null);
-      // wheretheiss.at is much more reliable and HTTPS
       const { data } = await axios.get('https://api.wheretheiss.at/v1/satellites/25544');
       
       const lat = parseFloat(data.latitude);
@@ -73,7 +71,7 @@ export default function useISS() {
       const newPos = { lat, lon, timestamp: data.timestamp };
 
       setPosition(newPos);
-      setSpeed(data.velocity); // mph/kph depending on API units (default is km/h)
+      setSpeed(data.velocity);
       
       setSpeedHistory((hist) =>
         [...hist, { time: new Date().toLocaleTimeString(), speed: data.velocity }].slice(-30)
@@ -92,25 +90,33 @@ export default function useISS() {
     }
   }, [fetchLocation]);
 
-  const startTracking = useCallback(() => {
-    fetchPosition();
-    fetchPeople();
-    intervalRef.current = setInterval(fetchPosition, 10000);
-  }, [fetchPosition, fetchPeople]);
-
   const refresh = useCallback(() => {
     setLoading(true);
-    setPositions([]);
-    setSpeed(0);
-    setSpeedHistory([]);
-    clearInterval(intervalRef.current);
-    startTracking();
-  }, [startTracking]);
+    fetchPosition();
+    fetchPeople();
+  }, [fetchPosition, fetchPeople]);
 
   useEffect(() => {
-    startTracking();
-    return () => clearInterval(intervalRef.current);
-  }, [startTracking]);
+    refresh();
+    if (autoRefresh) {
+      intervalRef.current = setInterval(fetchPosition, 10000);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [autoRefresh, fetchPosition, refresh]);
 
-  return { position, positions, speed, speedHistory, location, people, loading, error, refresh };
+  return { 
+    position, 
+    positions, 
+    speed, 
+    speedHistory, 
+    location, 
+    people, 
+    loading, 
+    error, 
+    refresh,
+    autoRefresh,
+    toggleAutoRefresh: () => setAutoRefresh(prev => !prev)
+  };
 }

@@ -13,8 +13,19 @@ import NewsDistributionChart from './components/Charts/NewsDistributionChart';
 
 function App() {
   // ISS
-  const { position, positions, speed, speedHistory, location, people, loading, error, refresh } =
-    useISS();
+  const { 
+    position, 
+    positions, 
+    speed, 
+    speedHistory, 
+    location, 
+    people, 
+    loading, 
+    error, 
+    refresh,
+    autoRefresh,
+    toggleAutoRefresh
+  } = useISS();
 
   // News (controlled from App so charts can change category)
   const [activeCategory, setActiveCategory] = useState('space');
@@ -127,6 +138,8 @@ function App() {
           loading={loading}
           error={error}
           refresh={handleISSRefresh}
+          autoRefresh={autoRefresh}
+          onToggleAutoRefresh={toggleAutoRefresh}
         />
 
         {/* ISS Map + Speed chart */}
