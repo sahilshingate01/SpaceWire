@@ -17,7 +17,7 @@ function App() {
     useISS();
 
   // News (controlled from App so charts can change category)
-  const [activeCategory, setActiveCategory] = useState('technology');
+  const [activeCategory, setActiveCategory] = useState('space');
   const {
     articles,
     loading: newsLoading,

@@ -4,10 +4,11 @@ import { CATEGORIES } from '../../hooks/useNews';
 import NewsCard, { SkeletonCard } from './NewsCard';
 
 const CATEGORY_LABELS = {
+  space: '🚀 Space',
   technology: '💻 Technology',
   science: '🔬 Science',
-  health: '🏥 Health',
   business: '💼 Business',
+  health: '🏥 Health',
   sports: '⚽ Sports',
 };
 

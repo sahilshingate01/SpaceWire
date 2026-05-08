@@ -2,9 +2,9 @@ import { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { saveMessages, loadMessages, clearMessages } from '../utils/chatStorage';
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-const MODEL = 'llama-3.3-70b-versatile';
-const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const HF_TOKEN = import.meta.env.VITE_HF_TOKEN;
+const MODEL_URL =
+  'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2';
 
 const REFUSAL =
   "I can ONLY answer using the current dashboard data (ISS + News). I can't answer that.";
@@ -12,12 +12,13 @@ const REFUSAL =
 function detectIntent(text) {
   const t = (text || '').toLowerCase();
 
-  const isGreeting = /\b(hi|hello|hey|greetings|morning|evening|thanks|thank you)\b/.test(t);
   const isISS = /\biss\b|\binternational space station\b/.test(t);
   const isNews = /\bnews\b|\bheadline(s)?\b|\barticle(s)?\b/.test(t);
 
-  if (isGreeting) return { kind: 'greeting' };
+  // Generic "tell me about ..." requests should still be supported
+  const isAbout = /\babout\b|\btell me\b|\bwhat('?s| is)\b/.test(t);
 
+  // ISS location (lat/lon/name)
   if (
     isISS &&
     (/\bwhere\b/.test(t) ||
@@ -30,12 +31,17 @@ function detectIntent(text) {
     return { kind: 'iss_location' };
   }
 
-  if (isISS && /\bspeed\b|\bkm\/h\b|\bkph\b|\bvelocity\b/.test(t)) {
+  // ISS speed
+  if (isISS && /\bspeed\b|\bkm\/h\b|\bkph\b/.test(t)) {
     return { kind: 'iss_speed' };
   }
 
-  if (isISS) return { kind: 'iss_overview' };
+  // Generic ISS request -> provide overview using allowed fields
+  if (isISS && (isAbout || /\bstatus\b|\bupdate\b|\bnow\b/.test(t))) {
+    return { kind: 'iss_overview' };
+  }
 
+  // Number of articles
   if (
     isNews &&
     (/\bhow many\b/.test(t) ||
@@ -46,10 +52,26 @@ function detectIntent(text) {
     return { kind: 'news_count' };
   }
 
+  // News summaries
+  if (
+    isNews &&
+    (/\bsummar(y|ies)\b/.test(t) ||
+      /\bsummary\b/.test(t) ||
+      /\bsummarize\b/.test(t) ||
+      /\bbrief\b/.test(t) ||
+      /\brecap\b/.test(t))
+  ) {
+    return { kind: 'news_summaries' };
+  }
+
+  // Generic news request -> treat as summaries
+  if (isNews && (isAbout || /\blatest\b|\btop\b|\bupdate\b|\bnow\b/.test(t))) {
+    return { kind: 'news_summaries' };
+  }
+
+  // If it mentions ISS/news but doesn't match above, still try to respond safely.
+  if (isISS) return { kind: 'iss_overview' };
   if (isNews) return { kind: 'news_summaries' };
-
-  if (t.length < 20) return { kind: 'general' };
-
   return { kind: 'unsupported' };
 }
 
@@ -73,24 +95,37 @@ function buildSystemPrompt(ctx, intent) {
     publishedAt: a?.publishedAt ?? null,
   }));
 
-  return `You are "SpaceWire Assistant", a dashboard-restricted AI.
-RULES:
-1. Use ONLY the DASHBOARD DATA below. No outside knowledge.
-2. If asked about something NOT in the data (and not a greeting), say: "${REFUSAL}"
-3. Be brief, professional, and helpful.
-4. You can respond to greetings (Hi, Hello) normally but steer back to dashboard facts.
+  return `You are a dashboard-restricted assistant.
+RULES (must follow):
+- You can ONLY use the DASHBOARD DATA provided below (ISS + News).
+- No outside knowledge. No guessing. No adding facts not present in the data.
+- If the data is missing for what the user asked, say exactly: "${REFUSAL}"
+- Keep answers short and direct.
 
-DASHBOARD DATA:
-- ISS Position: ${lat}, ${lon} (${locationName || 'Over Ocean'})
-- ISS Speed: ${speed ? speed.toFixed(0) : 'N/A'} km/h
-- People in Space: ${ctx?.people?.length || 0}
-- News articles (${ctx?.totalArticles || 0} total): ${JSON.stringify(articles)}`;
+ALLOWED QUESTIONS:
+- ISS location (lat/lon and locationName if present)
+- ISS speed
+- News summaries (based ONLY on article title + description)
+- Number of articles
+
+USER INTENT: ${intent.kind}
+
+DASHBOARD DATA (ONLY SOURCE OF TRUTH):
+ISS:
+- lat: ${lat ?? 'N/A'}
+- lon: ${lon ?? 'N/A'}
+- speed_kmh: ${speed ?? 'N/A'}
+- locationName: ${locationName ?? 'N/A'}
+NEWS:
+- totalArticles: ${ctx?.totalArticles ?? articlesRaw.length ?? 0}
+- topArticles: ${JSON.stringify(articles)}`;
 }
 
 export default function useChatbot() {
   const [messages, setMessages] = useState(() => loadMessages());
   const [isTyping, setIsTyping] = useState(false);
 
+  // Persist whenever messages change
   useEffect(() => {
     saveMessages(messages);
   }, [messages]);
@@ -108,7 +143,6 @@ export default function useChatbot() {
 
       try {
         const intent = detectIntent(userText);
-        
         if (intent.kind === 'unsupported') {
           setMessages((prev) => [
             ...prev,
@@ -117,12 +151,60 @@ export default function useChatbot() {
           return;
         }
 
-        if (!GROQ_API_KEY) {
+        // Deterministic responses (no model) for pure dashboard facts
+        if (intent.kind === 'iss_location' || intent.kind === 'iss_speed' || intent.kind === 'iss_overview') {
+          const lat = dashboardContext?.lat;
+          const lon = dashboardContext?.lon;
+          const speed = dashboardContext?.speed;
+          const locationName = dashboardContext?.locationName;
+
+          const parts = [];
+          if (intent.kind !== 'iss_speed') {
+            if (typeof lat === 'number' && typeof lon === 'number') {
+              parts.push(`ISS location: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+            } else {
+              parts.push(`ISS location: N/A`);
+            }
+            if (locationName) parts.push(`Location name: ${locationName}`);
+          }
+          if (intent.kind !== 'iss_location') {
+            if (typeof speed === 'number' && Number.isFinite(speed) && speed > 0) {
+              parts.push(`ISS speed: ${speed.toFixed(0)} km/h`);
+            } else {
+              parts.push(`ISS speed: N/A`);
+            }
+          }
+
+          const reply = parts.length ? parts.join('\n') : REFUSAL;
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: reply, timestamp: Date.now() },
+          ]);
+          return;
+        }
+
+        if (intent.kind === 'news_count') {
+          const total =
+            typeof dashboardContext?.totalArticles === 'number'
+              ? dashboardContext.totalArticles
+              : Array.isArray(dashboardContext?.newsHeadlines)
+                ? dashboardContext.newsHeadlines.length
+                : 0;
+          const reply = `Number of articles: ${total}`;
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: reply, timestamp: Date.now() },
+          ]);
+          return;
+        }
+
+        if (!HF_TOKEN) {
           setMessages((prev) => [
             ...prev,
             {
               role: 'assistant',
-              content: '⚠️ Missing `VITE_GROQ_API_KEY`. Please add it to Vercel and REDEPLOY.',
+              content:
+                '⚠️ Missing `VITE_HF_TOKEN`. Add it to your `.env` file to enable the dashboard assistant.',
               timestamp: Date.now(),
             },
           ]);
@@ -131,26 +213,41 @@ export default function useChatbot() {
 
         const systemPrompt = buildSystemPrompt(dashboardContext, intent);
 
-        const response = await axios.post(
-          API_URL,
-          {
-            model: MODEL,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userText }
-            ],
-            temperature: 0.5,
-            max_tokens: 500,
-          },
+        // Build conversation for the model
+        const prompt = `<s>[INST] ${systemPrompt}\n\nUser: ${userText}\n\nAnswer using ONLY the dashboard data. [/INST]`;
+
+        const { data } = await axios.post(
+          MODEL_URL,
+          { inputs: prompt, parameters: { max_new_tokens: 300, temperature: 0.7 } },
           {
             headers: {
-              Authorization: `Bearer ${GROQ_API_KEY}`,
+              Authorization: `Bearer ${HF_TOKEN}`,
               'Content-Type': 'application/json',
             },
           }
         );
 
-        const reply = response.data.choices[0].message.content;
+        let reply = 'Sorry, I could not generate a response.';
+        if (Array.isArray(data) && data[0]?.generated_text) {
+          // Extract only the assistant's response (after [/INST])
+          const full = data[0].generated_text;
+          const instEnd = full.lastIndexOf('[/INST]');
+          reply =
+            instEnd !== -1
+              ? full.slice(instEnd + 7).trim()
+              : full.trim();
+        }
+
+        // Hard safety: if model tries to answer outside the restriction, replace with refusal.
+        // (We do a light check to catch common failures.)
+        const lower = reply.toLowerCase();
+        if (
+          lower.includes('as an ai') ||
+          lower.includes('i don’t have access') ||
+          lower.includes("i don't have access")
+        ) {
+          reply = REFUSAL;
+        }
 
         const assistantMsg = {
           role: 'assistant',
@@ -160,14 +257,12 @@ export default function useChatbot() {
 
         setMessages((prev) => [...prev, assistantMsg]);
       } catch (err) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: `⚠️ Error: ${err.response?.data?.error?.message || err.message || 'Failed to connect to AI (Check CORS/API Key)'}`,
-            timestamp: Date.now(),
-          },
-        ]);
+        const errorMsg = {
+          role: 'assistant',
+          content: `⚠️ Error: ${err.response?.data?.error || err.message || 'Failed to get response'}`,
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
       } finally {
         setIsTyping(false);
       }

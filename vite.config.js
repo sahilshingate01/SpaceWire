@@ -7,10 +7,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/gnews': {
-        target: 'https://gnews.io',
+      '/api/news': {
+        target: 'https://newsapi.org',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/gnews/, '/api/v4'),
+        rewrite: (path) => path.replace(/^\/api\/news/, '/v2'),
       },
     },
   },

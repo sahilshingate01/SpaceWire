@@ -28,10 +28,17 @@ export default function useISS() {
     try {
       const { data } = await axios.get(
         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-        { headers: { 'Accept-Language': 'en' } }
+        { 
+          headers: { 
+            'Accept-Language': 'en',
+            'User-Agent': 'SpaceWire-App-v1.0'
+          } 
+        }
       );
-      if (data && data.display_name) {
-        setLocation(data.display_name);
+      if (data && data.address) {
+        const city = data.address.city || data.address.town || data.address.village;
+        const country = data.address.country;
+        setLocation(city ? `${city}, ${country}` : country || 'Over the ocean');
       } else {
         setLocation('Over the ocean');
       }
@@ -40,10 +47,25 @@ export default function useISS() {
     }
   }, []);
 
+  const fetchPeople = useCallback(async () => {
+    try {
+      // Use https for open-notify (some browsers might still block but it's better)
+      const { data } = await axios.get('https://corsproxy.io/?' + encodeURIComponent('http://api.open-notify.org/astros.json'));
+      if (data.message === 'success') {
+        setPeople(data.people);
+      }
+    } catch {
+      // fallback to static list if both fail
+      if (people.length === 0) {
+         setPeople([{ name: 'Oleg Kononenko', craft: 'ISS' }, { name: 'Nikolai Chub', craft: 'ISS' }, { name: 'Tracy Caldwell Dyson', craft: 'ISS' }]);
+      }
+    }
+  }, [people.length]);
+
   const fetchPosition = useCallback(async () => {
     try {
       setError(null);
-      // Using wheretheiss.at which supports HTTPS and has CORS enabled
+      // wheretheiss.at is much more reliable and HTTPS
       const { data } = await axios.get('https://api.wheretheiss.at/v1/satellites/25544');
       
       const lat = parseFloat(data.latitude);
@@ -51,17 +73,14 @@ export default function useISS() {
       const newPos = { lat, lon, timestamp: data.timestamp };
 
       setPosition(newPos);
+      setSpeed(data.velocity); // mph/kph depending on API units (default is km/h)
+      
+      setSpeedHistory((hist) =>
+        [...hist, { time: new Date().toLocaleTimeString(), speed: data.velocity }].slice(-30)
+      );
 
       setPositions((prev) => {
         const updated = [...prev, newPos].slice(-15);
-
-        // wheretheiss.at provides speed directly in km/h
-        const calculatedSpeed = data.velocity;
-        setSpeed(calculatedSpeed);
-        setSpeedHistory((hist) =>
-          [...hist, { time: new Date().toLocaleTimeString(), speed: calculatedSpeed }].slice(-30)
-        );
-
         return updated;
       });
 
@@ -73,29 +92,10 @@ export default function useISS() {
     }
   }, [fetchLocation]);
 
-  const fetchPeople = useCallback(async () => {
-    try {
-      // open-notify astros does not support HTTPS, so we use a proxy.
-      const targetUrl = 'http://api.open-notify.org/astros.json';
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&timestamp=${Date.now()}`;
-      
-      const { data } = await axios.get(proxyUrl);
-      
-      if (data && data.contents) {
-        const parsedData = JSON.parse(data.contents);
-        if (parsedData.message === 'success') {
-          setPeople(parsedData.people);
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to fetch people in space:', err);
-    }
-  }, []);
-
   const startTracking = useCallback(() => {
     fetchPosition();
     fetchPeople();
-    intervalRef.current = setInterval(fetchPosition, 15000);
+    intervalRef.current = setInterval(fetchPosition, 10000);
   }, [fetchPosition, fetchPeople]);
 
   const refresh = useCallback(() => {

@@ -11,10 +11,11 @@ import { Doughnut } from 'react-chartjs-2';
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 const CATEGORY_COLORS = {
+  space: '#8b5cf6',
   technology: '#6366f1',
   science: '#22c55e',
-  health: '#ef4444',
   business: '#f59e0b',
+  health: '#ef4444',
   sports: '#06b6d4',
 };
 
