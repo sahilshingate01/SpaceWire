@@ -40,9 +40,45 @@ export default function useISS() {
     }
   }, []);
 
+  const fetchPosition = useCallback(async () => {
+    try {
+      setError(null);
+      // Using wheretheiss.at which supports HTTPS and has CORS enabled
+      const { data } = await axios.get('https://api.wheretheiss.at/v1/satellites/25544');
+      
+      const lat = parseFloat(data.latitude);
+      const lon = parseFloat(data.longitude);
+      const newPos = { lat, lon, timestamp: data.timestamp };
+
+      setPosition(newPos);
+
+      setPositions((prev) => {
+        const updated = [...prev, newPos].slice(-15);
+
+        // wheretheiss.at provides speed directly in km/h
+        const calculatedSpeed = data.velocity;
+        setSpeed(calculatedSpeed);
+        setSpeedHistory((hist) =>
+          [...hist, { time: new Date().toLocaleTimeString(), speed: calculatedSpeed }].slice(-30)
+        );
+
+        return updated;
+      });
+
+      fetchLocation(lat, lon);
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch ISS position');
+      setLoading(false);
+    }
+  }, [fetchLocation]);
+
   const fetchPeople = useCallback(async () => {
     try {
-      const { data } = await axios.get('http://api.open-notify.org/astros.json');
+      // open-notify astros does not support HTTPS, so we use a proxy or a different source if available.
+      // For now, we'll try to use the same one but it might still fail on HTTPS.
+      // A better alternative for people in space is not readily available via a simple HTTPS API without CORS issues.
+      const { data } = await axios.get('https://corsproxy.io/?' + encodeURIComponent('http://api.open-notify.org/astros.json'));
       if (data.message === 'success') {
         setPeople(data.people);
       }
@@ -50,44 +86,6 @@ export default function useISS() {
       // silently fail for people fetch — non-critical
     }
   }, []);
-
-  const fetchPosition = useCallback(async () => {
-    try {
-      setError(null);
-      const { data } = await axios.get('http://api.open-notify.org/iss-now.json');
-      if (data.message === 'success') {
-        const lat = parseFloat(data.iss_position.latitude);
-        const lon = parseFloat(data.iss_position.longitude);
-        const newPos = { lat, lon, timestamp: data.timestamp };
-
-        setPosition(newPos);
-
-        setPositions((prev) => {
-          const updated = [...prev, newPos].slice(-15);
-
-          // Calculate speed from last two positions
-          if (updated.length >= 2) {
-            const last = updated[updated.length - 2];
-            const curr = updated[updated.length - 1];
-            const dist = haversine(last.lat, last.lon, curr.lat, curr.lon);
-            const calculatedSpeed = (dist / 15) * 3600;
-            setSpeed(calculatedSpeed);
-            setSpeedHistory((hist) =>
-              [...hist, { time: new Date().toLocaleTimeString(), speed: calculatedSpeed }].slice(-30)
-            );
-          }
-
-          return updated;
-        });
-
-        fetchLocation(lat, lon);
-        setLoading(false);
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to fetch ISS position');
-      setLoading(false);
-    }
-  }, [fetchLocation]);
 
   const startTracking = useCallback(() => {
     fetchPosition();
