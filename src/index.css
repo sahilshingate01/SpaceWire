@@ -4,17 +4,90 @@
 
 @layer base {
   :root {
-    --bg-color: #ffffff;
-    --text-color: #1a202c;
+    --bg-dark: #050a14;
+    --card-bg: rgba(13, 22, 40, 0.7);
+    --primary-cyan: #00d4ff;
+    --secondary-amber: #ff9500;
+    --accent-purple: #7b6fff;
+    --text-primary: #e4e1e9;
+    --text-secondary: #859398;
+    --border-glass: rgba(255, 255, 255, 0.1);
   }
-  .dark {
-    --bg-color: #1a202c;
-    --text-color: #f7fafc;
-  }
+
   body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    background-color: var(--bg-dark);
+    background-image: 
+      radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply backdrop-blur-xl border border-white/10 rounded-2xl transition-all duration-500 ease-out;
+    background-color: var(--card-bg);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .glass-panel:hover {
+    @apply border-white/20;
+    box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.5);
+    background-color: rgba(13, 22, 40, 0.8);
+  }
+
+  .glow-border-cyan {
+    @apply border-opacity-50 transition-all duration-500 ease-out;
+    border: 1px solid var(--primary-cyan);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.15);
+  }
+
+  .btn-mission {
+    @apply px-6 py-2 rounded-full font-display font-semibold transition-all duration-500 ease-out flex items-center justify-center gap-2 relative overflow-hidden;
+    background: linear-gradient(135deg, var(--primary-cyan), #00a8cc);
+    color: #003642;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+  }
+
+  .btn-mission::after {
+    content: '';
+    @apply absolute inset-0 bg-white/20 opacity-0 transition-opacity duration-300;
+  }
+
+  .btn-mission:hover::after {
+    @apply opacity-100;
+  }
+
+  .btn-mission:hover {
+    @apply scale-105 -translate-y-0.5;
+    box-shadow: 0 10px 25px rgba(0, 212, 255, 0.5);
+  }
+
+  .btn-mission:active {
+    @apply scale-95 translate-y-0;
+  }
+
+  .mission-input {
+    @apply bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none transition-all duration-500;
+  }
+
+  .mission-input:focus {
+    @apply border-cyan-500/50 ring-1 ring-cyan-500/20 bg-black/60;
   }
 }
 
@@ -22,4 +95,36 @@
 .iss-icon {
   background: transparent !important;
   border: none !important;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }

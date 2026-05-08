@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import useChatbot from '../../hooks/useChatbot';
 import ChatWindow from './ChatWindow';
+import { MessageSquare, X, Cpu } from 'lucide-react';
 
 export default function ChatButton({ dashboardContext }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,14 +30,14 @@ export default function ChatButton({ dashboardContext }) {
 
   const handleClear = () => {
     clearChat();
-    toast.success('Chat cleared');
+    toast.success('Communication stream cleared');
   };
 
   return (
     <>
       {/* Floating chat window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 animate-in slide-in-from-bottom-4">
+        <div className="fixed bottom-24 right-6 z-50 animate-in slide-in-from-bottom-4 duration-300">
           <ChatWindow
             messages={messages}
             isTyping={isTyping}
@@ -50,12 +51,24 @@ export default function ChatButton({ dashboardContext }) {
       {/* Floating action button */}
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl flex items-center justify-center text-2xl transition-all active:scale-95"
-        title={isOpen ? 'Close chat' : 'Open chat'}
+        className={`fixed bottom-6 right-6 z-50 w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 active:scale-95 group shadow-2xl ${
+          isOpen 
+            ? 'bg-slate-800 border border-white/10 text-white' 
+            : 'bg-cyan-500 text-[#003642] shadow-[0_0_30px_rgba(0,212,255,0.4)]'
+        }`}
+        title={isOpen ? 'Close Stream' : 'Initialize AI Link'}
       >
-        {isOpen ? '✕' : '💬'}
+        {isOpen ? (
+          <X size={24} className="animate-in fade-in zoom-in duration-300" />
+        ) : (
+          <div className="relative">
+            <Cpu size={28} className="group-hover:rotate-12 transition-transform duration-300" />
+            <div className="absolute -inset-2 bg-white/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+        )}
+        
         {!isOpen && unread > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-[10px] font-bold rounded-lg border-4 border-[#050a14] flex items-center justify-center animate-bounce">
             {unread}
           </span>
         )}

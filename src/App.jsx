@@ -8,10 +8,15 @@ import ISSMap from './components/ISS/ISSMap';
 import NewsPanel from './components/News/NewsPanel';
 import ChatButton from './components/Chatbot/ChatButton';
 import Navbar from './components/UI/Navbar';
+import Sidebar from './components/UI/Sidebar';
 import ISSSpeedChart from './components/Charts/ISSSpeedChart';
 import NewsDistributionChart from './components/Charts/NewsDistributionChart';
 
+import { motion, AnimatePresence } from 'framer-motion';
+
 function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+
   // ISS
   const { 
     position, 
@@ -46,7 +51,6 @@ function App() {
       const cached = getFromCache(cat);
       counts[cat] = Array.isArray(cached) ? cached.length : 0;
     }
-    // Ensure currently loaded category is reflected even if cache is empty.
     counts[activeCategory] = Array.isArray(articles) ? articles.length : counts[activeCategory] || 0;
     return counts;
   }, [activeCategory, articles]);
@@ -62,10 +66,8 @@ function App() {
     }));
   }, [articles, activeCategory]);
 
-  // Dashboard context for chatbot (keeps both legacy + required fields)
   const dashboardContext = useMemo(() => {
     return {
-      // required fields (per spec)
       issPosition: position ? { lat: position.lat, lon: position.lon } : null,
       issSpeed: speed,
       issLocation: location,
@@ -75,8 +77,6 @@ function App() {
         source,
         category,
       })),
-
-      // legacy keys used by current chatbot prompt
       lat: position?.lat,
       lon: position?.lon,
       locationName: location,
@@ -85,23 +85,22 @@ function App() {
     };
   }, [position, speed, location, people, simplifiedNewsHeadlines]);
 
-  // Toasts: refresh success/fail
   const issRefreshRequestedRef = useRef(false);
   const newsRefreshRequestedRef = useRef(false);
 
   const handleISSRefresh = () => {
     issRefreshRequestedRef.current = true;
     refresh();
-    toast.success('Refreshing ISS data…');
+    toast.success('Initiating ISS uplink…');
   };
 
   const handleNewsRefresh = async () => {
     newsRefreshRequestedRef.current = true;
     try {
       await refreshNews();
-      toast.success(`Refreshing ${activeCategory} news…`);
+      toast.success(`Scanning ${activeCategory} data streams…`);
     } catch (e) {
-      toast.error(e?.message || 'Failed to refresh news');
+      toast.error(e?.message || 'Uplink failed');
     }
   };
 
@@ -109,7 +108,7 @@ function App() {
     if (!issRefreshRequestedRef.current) return;
     if (loading) return;
     if (error) toast.error(error);
-    else toast.success('ISS updated');
+    else toast.success('ISS Telemetry Synchronized');
     issRefreshRequestedRef.current = false;
   }, [loading, error]);
 
@@ -117,64 +116,130 @@ function App() {
     if (!newsRefreshRequestedRef.current) return;
     if (newsLoading) return;
     if (newsError) toast.error(newsError);
-    else toast.success('News updated');
+    else toast.success('Intelligence Feed Updated');
     newsRefreshRequestedRef.current = false;
   }, [newsLoading, newsError]);
 
   return (
-    <div className="min-h-screen transition-colors duration-300">
-      <Toaster position="top-right" />
-      <Navbar />
+    <div className="min-h-screen flex text-white overflow-hidden">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: 'rgba(13, 22, 40, 0.9)',
+            color: '#fff',
+            border: '1px solid rgba(0, 212, 255, 0.2)',
+            backdropFilter: 'blur(10px)',
+          },
+        }}
+      />
+      
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Main Content Area */}
-      <main className="container mx-auto px-4 py-8 space-y-10">
-        {/* ISS Stats cards row */}
-        <ISSStats
-          position={position}
-          speed={speed}
-          location={location}
-          positions={positions}
-          people={people}
-          loading={loading}
-          error={error}
-          refresh={handleISSRefresh}
-          autoRefresh={autoRefresh}
-          onToggleAutoRefresh={toggleAutoRefresh}
-        />
+      <div className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+        <Navbar />
 
-        {/* ISS Map + Speed chart */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ISSMap position={position} positions={positions} speed={speed} location={location} />
-          <ISSSpeedChart speedHistory={speedHistory} />
-        </section>
+        <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="max-w-7xl mx-auto space-y-8"
+            >
+              
+              {activeTab === 'dashboard' && (
+                <>
+                  <header className="mb-8">
+                    <h1 className="text-4xl font-bold font-display tracking-tight mb-2">Systems Overview</h1>
+                    <p className="text-slate-400 font-mono text-sm tracking-wide">MISSION TIME: {new Date().toLocaleTimeString()} | SECTOR: ORBITAL_X49</p>
+                  </header>
 
-        {/* News Distribution Chart */}
-        <section className="grid grid-cols-1">
-          <NewsDistributionChart
-            articleCounts={articleCounts}
-            onCategorySelect={(cat) => setActiveCategory(cat)}
-          />
-        </section>
+                <ISSStats
+                  position={position}
+                  speed={speed}
+                  location={location}
+                  positions={positions}
+                  people={people}
+                  loading={loading}
+                  error={error}
+                  refresh={handleISSRefresh}
+                  autoRefresh={autoRefresh}
+                  onToggleAutoRefresh={toggleAutoRefresh}
+                />
 
-        {/* News Panel */}
-        <NewsPanel
-          activeCategory={activeCategory}
-          onActiveCategoryChange={setActiveCategory}
-          articles={articles}
-          loading={newsLoading}
-          error={newsError}
-          refresh={handleNewsRefresh}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-        />
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <ISSMap position={position} positions={positions} speed={speed} location={location} />
+                  <ISSSpeedChart speedHistory={speedHistory} />
+                </section>
+
+                <section className="grid grid-cols-1">
+                  <NewsDistributionChart
+                    articleCounts={articleCounts}
+                    onCategorySelect={(cat) => {
+                      setActiveCategory(cat);
+                      setActiveTab('news');
+                    }}
+                  />
+                </section>
+              </>
+            )}
+
+            {activeTab === 'iss' && (
+              <section className="space-y-6">
+                <header className="mb-8">
+                  <h1 className="text-4xl font-bold font-display tracking-tight mb-2">ISS Tracking</h1>
+                  <p className="text-slate-400 font-mono text-sm tracking-wide">LIVE TELEMETRY | VELOCITY: {speed ? `${speed.toFixed(2)} km/h` : 'FETCHING...'}</p>
+                </header>
+                <div className="h-[600px]">
+                  <ISSMap position={position} positions={positions} speed={speed} location={location} />
+                </div>
+                <ISSStats
+                  position={position}
+                  speed={speed}
+                  location={location}
+                  positions={positions}
+                  people={people}
+                  loading={loading}
+                  error={error}
+                  refresh={handleISSRefresh}
+                  autoRefresh={autoRefresh}
+                  onToggleAutoRefresh={toggleAutoRefresh}
+                  compact
+                />
+              </section>
+            )}
+
+            {activeTab === 'news' && (
+              <section className="space-y-6">
+                <header className="mb-8">
+                  <h1 className="text-4xl font-bold font-display tracking-tight mb-2">Intelligence Center</h1>
+                  <p className="text-slate-400 font-mono text-sm tracking-wide">GLOBAL NEWS FEED | CATEGORY: {activeCategory.toUpperCase()}</p>
+                </header>
+                <NewsPanel
+                  activeCategory={activeCategory}
+                  onActiveCategoryChange={setActiveCategory}
+                  articles={articles}
+                  loading={newsLoading}
+                  error={newsError}
+                  refresh={handleNewsRefresh}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
+                />
+              </section>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
-
-      {/* Floating Chatbot */}
-      <ChatButton dashboardContext={dashboardContext} />
     </div>
-  );
+
+    <ChatButton dashboardContext={dashboardContext} />
+  </div>
+);
 }
 
 export default App;

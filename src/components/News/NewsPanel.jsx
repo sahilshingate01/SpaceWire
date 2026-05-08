@@ -2,14 +2,15 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import { CATEGORIES } from '../../hooks/useNews';
 import NewsCard, { SkeletonCard } from './NewsCard';
+import { Search, Filter, RefreshCw, LayoutGrid } from 'lucide-react';
 
 const CATEGORY_LABELS = {
-  space: '🚀 Space',
-  technology: '💻 Technology',
-  science: '🔬 Science',
-  business: '💼 Business',
-  health: '🏥 Health',
-  sports: '⚽ Sports',
+  space: 'Cosmos',
+  technology: 'Tech',
+  science: 'Science',
+  business: 'Finance',
+  health: 'Life',
+  sports: 'Sports',
 };
 
 export default function NewsPanel({
@@ -23,45 +24,28 @@ export default function NewsPanel({
   setSearchQuery,
   sortBy,
   setSortBy,
-  onArticlesUpdate,
 }) {
-
-  React.useEffect(() => {
-    if (onArticlesUpdate && articles) {
-      onArticlesUpdate(articles);
-    }
-  }, [articles, onArticlesUpdate]);
 
   const handleRefresh = async () => {
     try {
       await refresh?.();
-      toast.success(`Refreshing ${activeCategory} news…`);
     } catch (e) {
-      toast.error(e?.message || 'Failed to refresh news');
+      toast.error(e?.message || 'Uplink failed');
     }
   };
 
   return (
-    <section className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <span className="text-3xl">📰</span>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">News Dashboard</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Top headlines from around the world</p>
-        </div>
-      </div>
-
+    <section className="space-y-10">
       {/* Category Tabs */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3 p-1.5 glass-panel rounded-2xl w-fit border-white/5">
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
             onClick={() => onActiveCategoryChange?.(cat)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-6 py-2.5 rounded-[14px] text-xs font-bold uppercase tracking-widest transition-all duration-300 ${
               activeCategory === cat
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-cyan-500 text-[#003642] shadow-[0_0_20px_rgba(0,212,255,0.3)] scale-105'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
             {CATEGORY_LABELS[cat]}
@@ -69,74 +53,69 @@ export default function NewsPanel({
         ))}
       </div>
 
-      {/* Controls: Search, Sort, Refresh */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search */}
-        <div className="relative flex-1">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+      {/* Controls */}
+      <div className="flex flex-col lg:flex-row gap-4 items-center">
+        <div className="relative flex-1 w-full lg:w-auto">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
           <input
             type="text"
-            placeholder="Search articles…"
+            placeholder="Search Intelligence Database..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-colors"
+            className="w-full pl-12 pr-4 py-4 rounded-2xl glass-panel bg-white/5 border-white/10 text-sm focus:border-cyan-500/50 outline-none transition-all placeholder:text-slate-600"
           />
         </div>
 
-        {/* Sort */}
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="px-4 py-2.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-        >
-          <option value="date">Sort by Date</option>
-          <option value="source">Sort by Source</option>
-        </select>
+        <div className="flex gap-4 w-full lg:w-auto">
+          <div className="relative flex-1 lg:flex-none">
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="pl-12 pr-8 py-4 rounded-2xl glass-panel bg-white/5 border-white/10 text-sm appearance-none outline-none focus:border-cyan-500/50 transition-all text-slate-300 w-full lg:w-48"
+            >
+              <option value="date" className="bg-[#050a14]">Chrono Sort</option>
+              <option value="source" className="bg-[#050a14]">Source Sort</option>
+            </select>
+          </div>
 
-        {/* Refresh */}
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-md whitespace-nowrap"
-        >
-          <span className={loading ? 'animate-spin inline-block' : ''}>🔄</span> Refresh
-        </button>
-      </div>
-
-      {/* Error State */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
-          <p className="text-red-600 dark:text-red-400 font-semibold mb-2">⚠️ {error}</p>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+            disabled={loading}
+            className="btn-mission min-w-[140px]"
           >
-            Retry
+            <RefreshCw className={`${loading ? 'animate-spin' : ''}`} size={18} />
+            SYNC FEED
           </button>
         </div>
-      )}
+      </div>
 
       {/* Articles Grid */}
-      {!error && (
+      {error ? (
+        <div className="glass-panel p-12 text-center border-red-500/20 bg-red-500/5">
+          <p className="text-red-400 font-bold uppercase tracking-widest mb-4">{error}</p>
+          <button onClick={handleRefresh} className="btn-mission bg-red-500 text-white mx-auto">Retry Sync</button>
+        </div>
+      ) : (
         <>
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {Array.from({ length: 4 }).map((_, i) => (
                 <SkeletonCard key={i} />
               ))}
             </div>
           ) : articles.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-4xl mb-3">🔍</p>
-              <p className="text-gray-500 dark:text-gray-400 font-medium">No articles found</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                {searchQuery ? 'Try a different search term' : 'Try refreshing or switching categories'}
-              </p>
+            <div className="glass-panel p-20 text-center border-white/5">
+              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                <LayoutGrid className="text-slate-600" size={32} />
+              </div>
+              <p className="text-slate-400 font-display font-bold uppercase tracking-widest">No Intelligence Data Found</p>
+              <p className="text-slate-600 text-sm mt-2 font-mono">Try adjusting your filters or search parameters.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {articles.map((article, i) => (
-                <NewsCard key={article.url || i} article={article} />
+                <NewsCard key={article.url || i} article={article} index={i} />
               ))}
             </div>
           )}

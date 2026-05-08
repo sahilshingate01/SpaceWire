@@ -11,6 +11,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { Activity as ActivityIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 ChartJS.register(
   CategoryScale,
@@ -24,7 +26,6 @@ ChartJS.register(
 );
 
 function formatHMS(t) {
-  // t may already be HH:MM:SS; if it's a Date/number, format it.
   if (typeof t === 'string' && t.includes(':')) return t;
   const d = new Date(t);
   if (Number.isNaN(d.getTime())) return '';
@@ -43,22 +44,24 @@ export default function ISSSpeedChart({ speedHistory = [] }) {
       labels,
       datasets: [
         {
-          label: 'Speed (km/h)',
+          label: 'Orbital Velocity',
           data: values,
-          borderColor: '#6366f1',
-          borderWidth: 2,
-          pointRadius: 2,
-          pointHoverRadius: 5,
-          pointBackgroundColor: '#6366f1',
+          borderColor: '#00d4ff',
+          borderWidth: 3,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#00d4ff',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2,
           tension: 0.4,
           fill: true,
           backgroundColor: (ctx) => {
             const chart = ctx.chart;
             const { ctx: canvasCtx, chartArea } = chart;
-            if (!chartArea) return 'rgba(99, 102, 241, 0.15)';
+            if (!chartArea) return 'rgba(0, 212, 255, 0.1)';
             const g = canvasCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            g.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
-            g.addColorStop(1, 'rgba(99, 102, 241, 0.05)');
+            g.addColorStop(0, 'rgba(0, 212, 255, 0.25)');
+            g.addColorStop(1, 'rgba(0, 212, 255, 0)');
             return g;
           },
         },
@@ -73,41 +76,71 @@ export default function ISSSpeedChart({ speedHistory = [] }) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        title: {
-          display: true,
-          text: 'ISS Speed Over Time',
-          color: '#9ca3af',
-          font: { size: 14, weight: '600' },
-          padding: { top: 6, bottom: 10 },
-        },
         tooltip: {
           enabled: true,
+          backgroundColor: 'rgba(13, 22, 40, 0.95)',
+          titleColor: '#859398',
+          titleFont: { family: 'JetBrains Mono', size: 10, weight: '700' },
+          bodyColor: '#00d4ff',
+          bodyFont: { family: 'JetBrains Mono', size: 12, weight: '700' },
+          borderColor: 'rgba(0, 212, 255, 0.2)',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
           callbacks: {
-            title: (items) => (items?.[0]?.label ? `Time: ${items[0].label}` : 'Time'),
-            label: (item) => `Speed: ${Number(item.raw).toFixed(0)} km/h`,
+            title: (items) => (items?.[0]?.label ? `TIMESTAMP: ${items[0].label}` : 'TIME'),
+            label: (item) => `VELOCITY: ${Number(item.raw).toLocaleString()} KM/H`,
           },
         },
       },
       scales: {
         x: {
-          ticks: { color: '#9ca3af', maxRotation: 0, autoSkip: true },
-          grid: { color: 'rgba(156,163,175,0.12)' },
+          ticks: { 
+            color: '#475569', 
+            font: { family: 'JetBrains Mono', size: 9 },
+            maxRotation: 0, 
+            autoSkip: true 
+          },
+          grid: { display: false },
         },
         y: {
-          title: { display: true, text: 'km/h', color: '#9ca3af' },
-          ticks: { color: '#9ca3af' },
-          grid: { color: 'rgba(156,163,175,0.12)' },
+          ticks: { 
+            color: '#475569',
+            font: { family: 'JetBrains Mono', size: 9 },
+            callback: (val) => `${(val/1000).toFixed(1)}k`
+          },
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
         },
       },
     };
   }, []);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md border border-gray-100 dark:border-gray-700 transition-colors">
-      <div className="h-[320px]">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+      className="glass-panel p-6 border-white/5 flex flex-col"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <ActivityIcon className="text-cyan-400" size={18} />
+          <h3 className="text-sm font-bold text-white uppercase tracking-[0.2em] font-display">Velocity Metrics</h3>
+        </div>
+        <div className="flex gap-1">
+          <div className="w-1 h-3 bg-cyan-500/20 rounded-full"></div>
+          <div className="w-1 h-3 bg-cyan-500/40 rounded-full"></div>
+          <div className="w-1 h-3 bg-cyan-500/60 rounded-full"></div>
+        </div>
+      </div>
+      <div className="h-[280px]">
         <Line ref={chartRef} data={data} options={options} />
       </div>
-    </div>
+      <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center text-[10px] font-mono text-slate-500">
+        <span>UPLINK: ACTIVE</span>
+        <span className="text-cyan-500/60">SENSORS: NOMINAL</span>
+      </div>
+    </motion.div>
   );
 }
 
