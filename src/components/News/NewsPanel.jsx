@@ -32,6 +32,16 @@ export default function NewsPanel({
     }
   }, [articles, onArticlesUpdate]);
 
+  // Auto-refresh every 10 seconds
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      if (!loading && !error) {
+        refresh?.();
+      }
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [refresh, loading, error]);
+
   const handleRefresh = async () => {
     try {
       await refresh?.();
@@ -93,14 +103,24 @@ export default function NewsPanel({
           <option value="source">Sort by Source</option>
         </select>
 
-        {/* Refresh */}
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-md whitespace-nowrap"
-        >
-          <span className={loading ? 'animate-spin inline-block' : ''}>🔄</span> Refresh
-        </button>
+        {/* Refresh & Auto-Refresh Status */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-md whitespace-nowrap"
+          >
+            <span className={loading ? 'animate-spin inline-block' : ''}>🔄</span> Refresh
+          </button>
+          
+          <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2.5 rounded-lg border border-emerald-100 dark:border-emerald-800/30 whitespace-nowrap shadow-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Auto-Refresh: ON (10s)</span>
+          </div>
+        </div>
       </div>
 
       {/* Error State */}
