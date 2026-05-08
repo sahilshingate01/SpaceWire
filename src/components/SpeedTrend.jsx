@@ -58,33 +58,7 @@ export default function SpeedTrend() {
         </div>
       </div>
 
-      <div style={{ marginTop: '1.5rem' }}>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-          The station is currently accelerating through its perigee phase. Signal strength is nominal.
-        </p>
-        
-        <button style={{ 
-          width: '100%', 
-          padding: '0.875rem', 
-          background: 'var(--accent-cyan)', 
-          color: '#000', 
-          border: 'none', 
-          borderRadius: '8px',
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.5rem',
-          cursor: 'pointer',
-          transition: 'opacity 0.2s'
-        }}
-        onMouseOver={e => e.currentTarget.style.opacity = 0.9}
-        onMouseOut={e => e.currentTarget.style.opacity = 1}
-        >
-          <BarChart2 size={18} />
-          Detailed Telemetry
-        </button>
-      </div>
+
     </div>
   );
 }
