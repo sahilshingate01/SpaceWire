@@ -2,9 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { saveMessages, loadMessages, clearMessages } from '../utils/chatStorage';
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-const MODEL = 'llama-3.3-70b-versatile';
-const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const HF_TOKEN = import.meta.env.VITE_HF_TOKEN;
+const MODEL_URL = 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2';
 
 const REFUSAL =
   "I can ONLY answer using the current dashboard data (ISS + News). I can't answer that.";
@@ -130,12 +129,12 @@ export default function useChatbot() {
           return;
         }
 
-        if (!GROQ_API_KEY) {
+        if (!HF_TOKEN) {
           setMessages((prev) => [
             ...prev,
             {
               role: 'assistant',
-              content: '⚠️ Missing `VITE_GROQ_API_KEY`. Please add it to your environment variables.',
+              content: '⚠️ Missing `VITE_HF_TOKEN`. Please add it to your environment variables.',
               timestamp: Date.now(),
             },
           ]);
@@ -143,27 +142,25 @@ export default function useChatbot() {
         }
 
         const systemPrompt = buildSystemPrompt(dashboardContext, intent);
+        const prompt = `<s>[INST] ${systemPrompt}\n\nUser: ${userText}\n\nAnswer using ONLY the dashboard data. [/INST]`;
 
-        const response = await axios.post(
-          API_URL,
-          {
-            model: MODEL,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userText }
-            ],
-            temperature: 0.5,
-            max_tokens: 500,
-          },
+        const { data } = await axios.post(
+          MODEL_URL,
+          { inputs: prompt, parameters: { max_new_tokens: 300, temperature: 0.7 } },
           {
             headers: {
-              Authorization: `Bearer ${GROQ_API_KEY}`,
+              Authorization: `Bearer ${HF_TOKEN}`,
               'Content-Type': 'application/json',
             },
           }
         );
 
-        const reply = response.data.choices[0].message.content;
+        let reply = 'Sorry, I could not generate a response.';
+        if (Array.isArray(data) && data[0]?.generated_text) {
+          const full = data[0].generated_text;
+          const instEnd = full.lastIndexOf('[/INST]');
+          reply = instEnd !== -1 ? full.slice(instEnd + 7).trim() : full.trim();
+        }
 
         const assistantMsg = {
           role: 'assistant',
@@ -177,7 +174,7 @@ export default function useChatbot() {
           ...prev,
           {
             role: 'assistant',
-            content: `⚠️ Error: ${err.response?.data?.error?.message || err.message || 'Failed to connect to AI'}`,
+            content: `⚠️ Error: ${err.response?.data?.error || err.message || 'Failed to connect to AI'}`,
             timestamp: Date.now(),
           },
         ]);
