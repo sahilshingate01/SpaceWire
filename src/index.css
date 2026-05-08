@@ -128,3 +128,20 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
+
+/* Responsive Utilities */
+@media (max-width: 640px) {
+  .glass-panel {
+    @apply rounded-xl;
+  }
+}
+
+.category-tab-container {
+  @apply overflow-x-auto scrollbar-hide flex-nowrap md:flex-wrap;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.category-tab-container::-webkit-scrollbar {
+  display: none;
+}

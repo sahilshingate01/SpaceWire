@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // ISS
   const { 
@@ -121,7 +122,7 @@ function App() {
   }, [newsLoading, newsError]);
 
   return (
-    <div className="min-h-screen flex text-white overflow-hidden">
+    <div className="min-h-screen flex text-white overflow-hidden bg-[#050a14]">
       <Toaster 
         position="top-right"
         toastOptions={{
@@ -134,12 +135,20 @@ function App() {
         }}
       />
       
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar 
+        activeTab={activeTab} 
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setIsSidebarOpen(false); // Close on mobile after selection
+        }} 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
-      <div className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
-        <Navbar />
+      <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-500 ${isSidebarOpen ? 'ml-0' : 'ml-0 lg:ml-64'}`}>
+        <Navbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-        <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -147,99 +156,122 @@ function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="max-w-7xl mx-auto space-y-8"
+              className="max-w-7xl mx-auto"
             >
-              
               {activeTab === 'dashboard' && (
-                <>
-                  <header className="mb-8">
-                    <h1 className="text-4xl font-bold font-display tracking-tight mb-2">Systems Overview</h1>
-                    <p className="text-slate-400 font-mono text-sm tracking-wide">MISSION TIME: {new Date().toLocaleTimeString()} | SECTOR: ORBITAL_X49</p>
+                <div className="space-y-6 md:space-y-8">
+                  <header className="mb-8 hidden md:block">
+                    <h1 className="text-4xl font-bold font-display tracking-tight mb-2">Mission Control</h1>
+                    <p className="text-slate-400 font-mono text-sm tracking-wide">
+                      STATUS: ONLINE | LOCAL TIME: {new Date().toLocaleTimeString()}
+                    </p>
                   </header>
 
-                <ISSStats
-                  position={position}
-                  speed={speed}
-                  location={location}
-                  positions={positions}
-                  people={people}
-                  loading={loading}
-                  error={error}
-                  refresh={handleISSRefresh}
-                  autoRefresh={autoRefresh}
-                  onToggleAutoRefresh={toggleAutoRefresh}
-                />
-
-                <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <ISSMap position={position} positions={positions} speed={speed} location={location} />
-                  <ISSSpeedChart speedHistory={speedHistory} />
-                </section>
-
-                <section className="grid grid-cols-1">
-                  <NewsDistributionChart
-                    articleCounts={articleCounts}
-                    onCategorySelect={(cat) => {
-                      setActiveCategory(cat);
-                      setActiveTab('news');
-                    }}
+                  <ISSStats 
+                    position={position} 
+                    speed={speed} 
+                    location={location} 
+                    positions={positions}
+                    people={people}
+                    loading={loading}
+                    error={error}
+                    refresh={handleISSRefresh}
+                    autoRefresh={autoRefresh}
+                    onToggleAutoRefresh={toggleAutoRefresh}
                   />
-                </section>
-              </>
-            )}
 
-            {activeTab === 'iss' && (
-              <section className="space-y-6">
-                <header className="mb-8">
-                  <h1 className="text-4xl font-bold font-display tracking-tight mb-2">ISS Tracking</h1>
-                  <p className="text-slate-400 font-mono text-sm tracking-wide">LIVE TELEMETRY | VELOCITY: {speed ? `${speed.toFixed(2)} km/h` : 'FETCHING...'}</p>
-                </header>
-                <div className="h-[600px]">
-                  <ISSMap position={position} positions={positions} speed={speed} location={location} />
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
+                    <div className="xl:col-span-2 space-y-6 md:space-y-8">
+                      <div className="h-[400px] md:h-[500px]">
+                        <ISSMap 
+                          position={position} 
+                          positions={positions} 
+                          speed={speed} 
+                          location={location} 
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                        <ISSSpeedChart speedHistory={speedHistory} />
+                        <NewsDistributionChart articleCounts={articleCounts} onCategorySelect={setActiveCategory} />
+                      </div>
+                    </div>
+                    
+                    <div className="xl:col-span-1">
+                      <NewsPanel 
+                        activeCategory={activeCategory}
+                        onActiveCategoryChange={setActiveCategory}
+                        articles={articles}
+                        loading={newsLoading}
+                        error={newsError}
+                        refresh={handleNewsRefresh}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <ISSStats
-                  position={position}
-                  speed={speed}
-                  location={location}
-                  positions={positions}
-                  people={people}
-                  loading={loading}
-                  error={error}
-                  refresh={handleISSRefresh}
-                  autoRefresh={autoRefresh}
-                  onToggleAutoRefresh={toggleAutoRefresh}
-                  compact
-                />
-              </section>
-            )}
+              )}
 
-            {activeTab === 'news' && (
-              <section className="space-y-6">
-                <header className="mb-8">
-                  <h1 className="text-4xl font-bold font-display tracking-tight mb-2">Intelligence Center</h1>
-                  <p className="text-slate-400 font-mono text-sm tracking-wide">GLOBAL NEWS FEED | CATEGORY: {activeCategory.toUpperCase()}</p>
-                </header>
-                <NewsPanel
-                  activeCategory={activeCategory}
-                  onActiveCategoryChange={setActiveCategory}
-                  articles={articles}
-                  loading={newsLoading}
-                  error={newsError}
-                  refresh={handleNewsRefresh}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  sortBy={sortBy}
-                  setSortBy={setSortBy}
-                />
-              </section>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+              {activeTab === 'iss' && (
+                <div className="space-y-6 md:space-y-8">
+                  <header className="mb-8">
+                    <h1 className="text-4xl font-bold font-display tracking-tight mb-2">Orbital Tracking</h1>
+                    <p className="text-slate-400 font-mono text-sm tracking-wide">REAL-TIME TELEMETRY STREAM</p>
+                  </header>
+                  <ISSStats 
+                    position={position} 
+                    speed={speed} 
+                    location={location} 
+                    positions={positions}
+                    people={people}
+                    loading={loading}
+                    error={error}
+                    refresh={handleISSRefresh}
+                    autoRefresh={autoRefresh}
+                    onToggleAutoRefresh={toggleAutoRefresh}
+                    compact
+                  />
+                  <div className="h-[500px] md:h-[600px]">
+                    <ISSMap 
+                      position={position} 
+                      positions={positions} 
+                      speed={speed} 
+                      location={location} 
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'news' && (
+                <div className="space-y-6 md:space-y-8">
+                  <header className="mb-8">
+                    <h1 className="text-4xl font-bold font-display tracking-tight mb-2">News Center</h1>
+                    <p className="text-slate-400 font-mono text-sm tracking-wide">GLOBAL INTELLIGENCE FEED</p>
+                  </header>
+                  <NewsPanel 
+                    activeCategory={activeCategory}
+                    onActiveCategoryChange={setActiveCategory}
+                    articles={articles}
+                    loading={newsLoading}
+                    error={newsError}
+                    refresh={handleNewsRefresh}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    sortBy={sortBy}
+                    setSortBy={setSortBy}
+                  />
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        
+        <ChatButton context={dashboardContext} />
+      </div>
     </div>
-
-    <ChatButton dashboardContext={dashboardContext} />
-  </div>
-);
+  );
 }
 
 export default App;

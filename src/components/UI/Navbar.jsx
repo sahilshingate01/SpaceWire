@@ -1,14 +1,21 @@
 import React, { useContext } from 'react';
 import { ThemeContext } from '../../context/ThemeContext';
-import { Sun, Moon, Bell, Search } from 'lucide-react';
+import { Bell, Search, Menu } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }) {
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
 
   return (
-    <header className="w-full h-20 px-8 flex justify-between items-center bg-transparent border-b border-white/5 sticky top-0 z-40">
+    <header className="w-full h-20 px-4 md:px-8 flex justify-between items-center bg-transparent border-b border-white/5 sticky top-0 z-40">
       <div className="flex items-center gap-6">
-        <div className="relative group">
+        <button 
+          onClick={onMenuClick}
+          className="p-2 hover:bg-white/5 rounded-lg lg:hidden text-slate-400 hover:text-white transition-colors"
+        >
+          <Menu size={24} />
+        </button>
+        <div className="relative group hidden md:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors" size={18} />
           <input 
             type="text" 

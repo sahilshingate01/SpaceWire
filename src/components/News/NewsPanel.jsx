@@ -37,7 +37,7 @@ export default function NewsPanel({
   return (
     <section className="space-y-10">
       {/* Category Tabs */}
-      <div className="flex flex-wrap gap-3 p-1.5 glass-panel rounded-2xl w-fit border-white/5">
+      <div className="flex category-tab-container gap-3 p-1.5 glass-panel rounded-2xl w-full md:w-fit border-white/5">
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
