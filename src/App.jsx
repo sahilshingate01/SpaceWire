@@ -10,7 +10,7 @@ import ChatButton from './components/Chatbot/ChatButton';
 import Navbar from './components/UI/Navbar';
 import Sidebar from './components/UI/Sidebar';
 import ISSSpeedChart from './components/Charts/ISSSpeedChart';
-import NewsDistributionChart from './components/Charts/NewsDistributionChart';
+import VelocityGauge from './components/Charts/VelocityGauge';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -190,25 +190,13 @@ function App() {
                           location={location} 
                         />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                      <div className="grid grid-cols-1 gap-6 md:gap-8">
                         <ISSSpeedChart speedHistory={speedHistory} />
-                        <NewsDistributionChart articleCounts={articleCounts} onCategorySelect={setActiveCategory} />
                       </div>
                     </div>
                     
                     <div className="xl:col-span-1">
-                      <NewsPanel 
-                        activeCategory={activeCategory}
-                        onActiveCategoryChange={setActiveCategory}
-                        articles={articles}
-                        loading={newsLoading}
-                        error={newsError}
-                        refresh={handleNewsRefresh}
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
-                        sortBy={sortBy}
-                        setSortBy={setSortBy}
-                      />
+                      <VelocityGauge speed={speed} />
                     </div>
                   </div>
                 </div>
