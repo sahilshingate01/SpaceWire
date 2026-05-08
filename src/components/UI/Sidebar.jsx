@@ -94,5 +94,3 @@ const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
 };
 
 export default Sidebar;
-
-export default Sidebar;
