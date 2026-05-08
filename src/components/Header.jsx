@@ -20,12 +20,7 @@ export default function Header() {
         <h1 className="header-title">Real-Time ISS Intelligence</h1>
       </div>
 
-      <nav className="header-nav">
-        <a href="#" className="nav-link active">Mission Control</a>
-        <a href="#" className="nav-link">Orbital View</a>
-        <a href="#" className="nav-link">Research</a>
-        <a href="#" className="nav-link">Archives</a>
-      </nav>
+
 
       <div className="header-controls">
         <div className="time-display">
