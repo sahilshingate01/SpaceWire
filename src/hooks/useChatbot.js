@@ -2,8 +2,9 @@ import { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { saveMessages, loadMessages, clearMessages } from '../utils/chatStorage';
 
-const HF_TOKEN = import.meta.env.VITE_HF_TOKEN;
-const MODEL_URL = 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2';
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+const MODEL = 'llama-3.3-70b-versatile';
+const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const REFUSAL =
   "I can ONLY answer using the current dashboard data (ISS + News). I can't answer that.";
@@ -11,16 +12,12 @@ const REFUSAL =
 function detectIntent(text) {
   const t = (text || '').toLowerCase();
 
-  // Basic greetings/politeness should be handled by the model, 
-  // but we flag them to avoid the hard refusal if they don't mention ISS/News.
   const isGreeting = /\b(hi|hello|hey|greetings|morning|evening|thanks|thank you)\b/.test(t);
   const isISS = /\biss\b|\binternational space station\b/.test(t);
   const isNews = /\bnews\b|\bheadline(s)?\b|\barticle(s)?\b/.test(t);
 
-  // If it's a greeting, we let it pass to the model
   if (isGreeting) return { kind: 'greeting' };
 
-  // ISS location (lat/lon/name)
   if (
     isISS &&
     (/\bwhere\b/.test(t) ||
@@ -33,17 +30,12 @@ function detectIntent(text) {
     return { kind: 'iss_location' };
   }
 
-  // ISS speed
   if (isISS && /\bspeed\b|\bkm\/h\b|\bkph\b|\bvelocity\b/.test(t)) {
     return { kind: 'iss_speed' };
   }
 
-  // Generic ISS request -> provide overview using allowed fields
-  if (isISS) {
-    return { kind: 'iss_overview' };
-  }
+  if (isISS) return { kind: 'iss_overview' };
 
-  // Number of articles
   if (
     isNews &&
     (/\bhow many\b/.test(t) ||
@@ -54,12 +46,8 @@ function detectIntent(text) {
     return { kind: 'news_count' };
   }
 
-  // News summaries
-  if (isNews) {
-    return { kind: 'news_summaries' };
-  }
+  if (isNews) return { kind: 'news_summaries' };
 
-  // If it's short and generic, let the model handle it (it will likely refuse if it's off-topic)
   if (t.length < 20) return { kind: 'general' };
 
   return { kind: 'unsupported' };
@@ -129,12 +117,12 @@ export default function useChatbot() {
           return;
         }
 
-        if (!HF_TOKEN) {
+        if (!GROQ_API_KEY) {
           setMessages((prev) => [
             ...prev,
             {
               role: 'assistant',
-              content: '⚠️ Missing `VITE_HF_TOKEN`. Please add it to your environment variables.',
+              content: '⚠️ Missing `VITE_GROQ_API_KEY`. Please add it to Vercel and REDEPLOY.',
               timestamp: Date.now(),
             },
           ]);
@@ -142,25 +130,27 @@ export default function useChatbot() {
         }
 
         const systemPrompt = buildSystemPrompt(dashboardContext, intent);
-        const prompt = `<s>[INST] ${systemPrompt}\n\nUser: ${userText}\n\nAnswer using ONLY the dashboard data. [/INST]`;
 
-        const { data } = await axios.post(
-          MODEL_URL,
-          { inputs: prompt, parameters: { max_new_tokens: 300, temperature: 0.7 } },
+        const response = await axios.post(
+          API_URL,
+          {
+            model: MODEL,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userText }
+            ],
+            temperature: 0.5,
+            max_tokens: 500,
+          },
           {
             headers: {
-              Authorization: `Bearer ${HF_TOKEN}`,
+              Authorization: `Bearer ${GROQ_API_KEY}`,
               'Content-Type': 'application/json',
             },
           }
         );
 
-        let reply = 'Sorry, I could not generate a response.';
-        if (Array.isArray(data) && data[0]?.generated_text) {
-          const full = data[0].generated_text;
-          const instEnd = full.lastIndexOf('[/INST]');
-          reply = instEnd !== -1 ? full.slice(instEnd + 7).trim() : full.trim();
-        }
+        const reply = response.data.choices[0].message.content;
 
         const assistantMsg = {
           role: 'assistant',
@@ -174,7 +164,7 @@ export default function useChatbot() {
           ...prev,
           {
             role: 'assistant',
-            content: `⚠️ Error: ${err.response?.data?.error || err.message || 'Failed to connect to AI'}`,
+            content: `⚠️ Error: ${err.response?.data?.error?.message || err.message || 'Failed to connect to AI (Check CORS/API Key)'}`,
             timestamp: Date.now(),
           },
         ]);

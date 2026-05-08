@@ -76,16 +76,19 @@ export default function useISS() {
   const fetchPeople = useCallback(async () => {
     try {
       // open-notify astros does not support HTTPS, so we use a proxy.
-      // allorigins.win is generally more reliable than corsproxy.io
       const targetUrl = 'http://api.open-notify.org/astros.json';
-      const { data } = await axios.get(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&timestamp=${Date.now()}`;
       
-      const parsedData = JSON.parse(data.contents);
-      if (parsedData.message === 'success') {
-        setPeople(parsedData.people);
+      const { data } = await axios.get(proxyUrl);
+      
+      if (data && data.contents) {
+        const parsedData = JSON.parse(data.contents);
+        if (parsedData.message === 'success') {
+          setPeople(parsedData.people);
+        }
       }
-    } catch {
-      // silently fail for people fetch — non-critical
+    } catch (err) {
+      console.warn('Failed to fetch people in space:', err);
     }
   }, []);
 
