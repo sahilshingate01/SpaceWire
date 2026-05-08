@@ -42,9 +42,37 @@ export default function ISSLiveTracking() {
       <div style={{ padding: '1.5rem', position: 'relative', zIndex: 10 }}>
         <div className="section-title">
           <span>ISS Live Tracking</span>
-          <div className="live-badge">
-            <div className="live-dot"></div>
-            LIVE
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button style={{ 
+                padding: '0.35rem 0.85rem', 
+                background: 'rgba(56, 189, 248, 0.1)', 
+                color: 'var(--accent-cyan)', 
+                border: '1px solid rgba(56, 189, 248, 0.3)', 
+                borderRadius: '20px', 
+                fontSize: '0.7rem', 
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}>
+                Refresh Now
+              </button>
+              <button style={{ 
+                padding: '0.35rem 0.85rem', 
+                background: 'rgba(255, 255, 255, 0.05)', 
+                color: 'var(--text-secondary)', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '20px', 
+                fontSize: '0.7rem', 
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}>
+                Auto-Refresh: <span style={{ color: 'var(--accent-cyan)' }}>ON</span>
+              </button>
+            </div>
+            <div className="live-badge">
+              <div className="live-dot"></div>
+              LIVE
+            </div>
           </div>
         </div>
 
