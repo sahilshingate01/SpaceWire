@@ -1,9 +1,9 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Newspaper, 
-  Map as MapIcon, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Newspaper,
+  Map as MapIcon,
+  Settings,
   HelpCircle,
   Globe
 } from 'lucide-react';
@@ -33,7 +33,7 @@ const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
 
       <aside className={`fixed left-0 top-0 h-screen w-64 glass-panel rounded-none border-y-0 border-l-0 z-[60] flex flex-col transform transition-transform duration-500 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="p-8 flex items-center gap-3">
-          <motion.div 
+          <motion.div
             initial={{ rotate: -90, opacity: 0 }}
             animate={{ rotate: 0, opacity: 1 }}
             className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(0,212,255,0.4)]"
@@ -52,11 +52,10 @@ const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: idx * 0.1 }}
               onClick={() => onTabChange(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                activeTab === item.id 
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(0,212,255,0.1)]' 
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${activeTab === item.id
+                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(0,212,255,0.1)]'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
+                }`}
               whileHover={{ x: 5 }}
               whileTap={{ scale: 0.98 }}
             >
