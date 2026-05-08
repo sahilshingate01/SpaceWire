@@ -137,7 +137,7 @@
 }
 
 .category-tab-container {
-  @apply overflow-x-auto scrollbar-hide flex-nowrap md:flex-wrap;
+  @apply overflow-x-auto flex-nowrap md:flex-wrap;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
