@@ -1,16 +1,49 @@
-# React + Vite
+# 🛰️ Space & News Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A responsive dashboard that tracks the **International Space Station (ISS)** in real time, shows **top news headlines**, and includes a **restricted chatbot** that can only answer from the dashboard data.
 
-Currently, two official plugins are available:
+## Features
+- **ISS live tracking**: position, speed, map path, refresh + auto-update every 15s
+- **ISS speed chart**: line chart of last 30 speed samples
+- **News dashboard**: category tabs, search, sort, caching
+- **News distribution chart**: doughnut chart by category (click slice to switch category)
+- **Restricted chatbot**: uses `mistralai/Mistral-7B-Instruct-v0.2` and only answers from ISS + News data
+- **Dark/light mode**: persists via localStorage
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech stack
+- **React + Vite**
+- **TailwindCSS**
+- **Chart.js + react-chartjs-2**
+- **Leaflet + react-leaflet**
+- **Hugging Face Inference API**
 
-## React Compiler
+## Run locally
+1. Install deps:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+```
 
-## Expanding the ESLint configuration
+2. Create `.env`:
+   - Copy `.env.example` → `.env`
+   - Fill in required variables
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+3. Start dev server:
+
+```bash
+npm run dev
+```
+
+## Environment variables
+- **`VITE_NEWS_API_KEY`**: GNews API token
+- **`VITE_HF_TOKEN`**: Hugging Face Inference API token
+
+## Deployment (Vercel)
+- `vercel.json` is included for SPA rewrites.
+- In the Vercel dashboard set:
+  - `VITE_NEWS_API_KEY`
+  - `VITE_HF_TOKEN`
+
+### Live demo
+- **Coming soon**: (add your link here)
+
