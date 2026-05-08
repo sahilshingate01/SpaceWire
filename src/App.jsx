@@ -3,8 +3,7 @@ import Header from './components/Header';
 import ISSLiveTracking from './components/ISSLiveTracking';
 import SpeedTrend from './components/SpeedTrend';
 import BreakingNews from './components/BreakingNews';
-import NewsDistribution from './components/NewsDistribution';
-import TrajectoryMap from './components/TrajectoryMap';
+
 import Footer from './components/Footer';
 
 function App() {
@@ -19,10 +18,7 @@ function App() {
 
       <BreakingNews />
 
-      <div className="bottom-grid">
-        <NewsDistribution />
-        <TrajectoryMap />
-      </div>
+
 
       <Footer />
     </div>
